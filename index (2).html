@@ -107,7 +107,7 @@
                         RÈGLE STRICTE !
                     </h3>
                     <p class="text-sm text-red-200 leading-relaxed relative z-10">
-                        Si le prédicteur affiche un multiplicateur exact, <strong>respectez-le strictement</strong> et encaissez vos gains à cette valeur. IL EST STRICTEMENT INTERDIT d'être gourmand et de risquer d'attendre un multiplicateur plus élevé !
+                        Si le prédicteur affiche un multiplicateur exact, <strong>respectez-le strictly</strong> et encaissez vos gains à cette valeur. IL EST STRICTEMENT INTERDIT d'être gourmand et de risquer d'attendre un multiplicateur plus élevé !
                     </p>
                 </div>
             </div>
@@ -303,7 +303,11 @@
     </div>
 
     <script>
-        
+        // Переменные для отслеживания выбранной игры и индекса коэффициентов Aviator
+        let currentSelectedGame = "";
+        let aviatorIndex = 0;
+        const aviatorMultipliers = ["3.07", "4.21", "3.57"];
+
         function switchView(targetViewId) {
             document.querySelectorAll('.app-view').forEach(v => {
                 v.classList.add('hidden');
@@ -361,11 +365,17 @@
             });
         });
 
-        // 2. Select Game -> Show Signal (Always < 2x for Aviator)
+        // 2. Select Game -> Show Signal
         document.querySelectorAll('.game-card').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const gameName = e.currentTarget.dataset.game;
+                currentSelectedGame = gameName;
                 
+                // Сбрасываем счетчик Aviator при каждом новом входе в игру
+                if(gameName === 'Aviator') {
+                    aviatorIndex = 0;
+                }
+
                 const lines = [
                     `[....] Injection du script dans ${gameName}...`,
                     `[ OK ] Protocole de contournement actif.`,
@@ -381,17 +391,31 @@
             });
         });
 
-        // 3. Request Next Signal -> Deposit Block (XOF)
+        // 3. Request Next Signal
         document.getElementById('btn-next-signal').addEventListener('click', () => {
-            const lines = [
-                "[....] Demande du hash suivant...",
-                "[WARN] Vérification de l'état du portefeuille...",
-                "<span class='text-yellow-500'>[FAIL] Solde actuel : 0.00 XOF</span>",
-                "<span class='text-red-500'>[ERR] Accès d'essai épuisé. Blocage !</span>"
-            ];
-            playTerminalSequence('kraken_core.exe', lines, () => {
-                switchView('view-deposit');
-            });
+            // Если мы находимся в Авиаторе и еще не показали все 3 коэффициента, генерируем следующий
+            if (currentSelectedGame === 'Aviator' && aviatorIndex < aviatorMultipliers.length) {
+                const lines = [
+                    `[....] Demande du hash suivant pour Aviator...`,
+                    `[ OK ] Connexion serveur optimisée.`,
+                    `<span class='text-green-500'>[ OK ] Nouveau multiplicateur trouvé.</span>`
+                ];
+                playTerminalSequence('kraken_core.exe', lines, () => {
+                    renderSignal('Aviator');
+                    switchView('view-signal');
+                });
+            } else {
+                // В противном случае переводим на страницу блокировки/депозита
+                const lines = [
+                    "[....] Demande du hash suivant...",
+                    "[WARN] Vérification de l'état du portefeuille...",
+                    "<span class='text-yellow-500'>[FAIL] Solde actuel : 0.00 XOF</span>",
+                    "<span class='text-red-500'>[ERR] Accès d'essai épuisé. Blocage !</span>"
+                ];
+                playTerminalSequence('kraken_core.exe', lines, () => {
+                    switchView('view-deposit');
+                });
+            }
         });
 
         function renderSignal(game) {
@@ -420,7 +444,13 @@
                 container.appendChild(grid);
             } 
             else if (game === 'Aviator') {
-                const mult = (1.10 + Math.random() * 0.89).toFixed(2);
+                // Показываем коэффициент по порядку: 3.07, затем 4.21, затем 3.57
+                let mult = aviatorMultipliers[aviatorIndex];
+                if (!mult) {
+                    mult = aviatorMultipliers[aviatorMultipliers.length - 1];
+                }
+                aviatorIndex++;
+
                 container.innerHTML = `
                     <div class="text-center">
                         <p class="text-zinc-500 text-sm font-bold tracking-widest mb-2 uppercase">ENCAISSER À :</p>
